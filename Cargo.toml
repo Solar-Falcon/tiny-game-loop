@@ -1,0 +1,17 @@
+[package]
+name = "win-loop-core"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/Solar-Falcon/win-loop-core"
+
+[dependencies]
+rustc-hash = "1"
+
+[dependencies.winit]
+version = "0.29"
+# warning: linux default-features
+# package.metadata.docs.rs
+optional = true
+
+[features]
+default = []
