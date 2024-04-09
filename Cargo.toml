@@ -1,17 +1,22 @@
 [package]
 name = "win-loop-core"
 version = "0.1.0"
+description = "Nice input handling and a basis for frame-rate-independent game loop. "
+authors = ["Solar-Falcon"]
 edition = "2021"
 repository = "https://github.com/Solar-Falcon/win-loop-core"
+readme = "README.md"
 
 [dependencies]
 rustc-hash = "1"
 
 [dependencies.winit]
 version = "0.29"
-# warning: linux default-features
-# package.metadata.docs.rs
+default-features = false
 optional = true
 
 [features]
-default = []
+default = ["winit"]
+
+[package.metadata.docs.rs]
+features = ["winit/default"]

@@ -1,5 +1,5 @@
+use core::{fmt::Debug, hash::Hash};
 use rustc_hash::FxHashMap;
-use std::{fmt::Debug, hash::Hash};
 
 #[cfg(feature = "winit")]
 use winit::{
@@ -63,24 +63,24 @@ impl InputState {
 
 /// Input handler.
 #[derive(Debug)]
-pub struct Input<E: EventTrait> {
+pub struct Input<K: KeyTypes> {
     mods: KeyMods,
-    physical_keys: FxHashMap<E::PhysicalKey, InputState>,
-    logical_keys: FxHashMap<E::LogicalKey, InputState>,
-    mouse_buttons: FxHashMap<E::MouseButton, InputState>,
+    keys: FxHashMap<K::KeyCode, InputState>,
+    logical_keys: FxHashMap<K::LogicalKey, InputState>,
+    mouse_buttons: FxHashMap<K::MouseButton, InputState>,
     mouse_pos: (f32, f32),
     mouse_scroll: (f32, f32),
 }
 
-impl<E> Input<E>
+impl<K> Input<K>
 where
-    E: EventTrait,
+    K: KeyTypes,
 {
     #[inline]
     pub fn new() -> Self {
         Self {
             mods: KeyMods::default(),
-            physical_keys: FxHashMap::default(),
+            keys: FxHashMap::default(),
             logical_keys: FxHashMap::default(),
             mouse_buttons: FxHashMap::default(),
             mouse_pos: (0., 0.),
@@ -90,19 +90,20 @@ where
 
     pub fn clear(&mut self) {
         self.mods = KeyMods::default();
-        self.physical_keys.clear();
+        self.keys.clear();
         self.logical_keys.clear();
         self.mouse_buttons.clear();
         self.mouse_pos = (0., 0.);
         self.mouse_scroll = (0., 0.);
     }
 
-    /// Cursor position (from [`WindowEvent::CursorMoved`](https://docs.rs/winit/0.29.5/winit/event/enum.WindowEvent.html#variant.CursorMoved)).
+    /// Mouse cursor position.
     #[inline]
     pub fn mouse_pos(&self) -> (f32, f32) {
         self.mouse_pos
     }
 
+    /// Mouse scroll value in lines (x, y).
     #[inline]
     pub fn mouse_scroll(&self) -> (f32, f32) {
         self.mouse_scroll
@@ -116,43 +117,43 @@ where
 
     /// All input states of physical keys.
     #[inline]
-    pub fn physical_keys(&self) -> &FxHashMap<E::PhysicalKey, InputState> {
-        &self.physical_keys
+    pub fn keys(&self) -> &FxHashMap<K::KeyCode, InputState> {
+        &self.keys
     }
 
     /// Returns `true` if a physical key has just been pressed.
     #[inline]
-    pub fn is_physical_key_pressed(&self, scancode: E::PhysicalKey) -> bool {
-        self.physical_keys
+    pub fn is_key_pressed(&self, scancode: K::KeyCode) -> bool {
+        self.keys
             .get(&scancode)
             .map_or(false, InputState::is_pressed)
     }
 
     /// Returns `true` if a physical key is down.
     #[inline]
-    pub fn is_physical_key_down(&self, scancode: E::PhysicalKey) -> bool {
-        self.physical_keys
+    pub fn is_key_down(&self, scancode: K::KeyCode) -> bool {
+        self.keys
             .get(&scancode)
             .map_or(false, InputState::is_any_down)
     }
 
     /// Returns `true` if a physical key has just been released.
     #[inline]
-    pub fn is_physical_key_released(&self, scancode: E::PhysicalKey) -> bool {
-        self.physical_keys
+    pub fn is_key_released(&self, scancode: K::KeyCode) -> bool {
+        self.keys
             .get(&scancode)
             .map_or(false, InputState::is_released)
     }
 
     /// All input states of logical keys.
     #[inline]
-    pub fn logical_keys(&self) -> &FxHashMap<E::LogicalKey, InputState> {
+    pub fn logical_keys(&self) -> &FxHashMap<K::LogicalKey, InputState> {
         &self.logical_keys
     }
 
     /// Returns `true` if a logical key has just been pressed.
     #[inline]
-    pub fn is_logical_key_pressed(&self, key: E::LogicalKey) -> bool {
+    pub fn is_logical_key_pressed(&self, key: K::LogicalKey) -> bool {
         self.logical_keys
             .get(&key)
             .map_or(false, InputState::is_pressed)
@@ -160,7 +161,7 @@ where
 
     /// Returns `true` if a logical key is down.
     #[inline]
-    pub fn is_logical_key_down(&self, key: E::LogicalKey) -> bool {
+    pub fn is_logical_key_down(&self, key: K::LogicalKey) -> bool {
         self.logical_keys
             .get(&key)
             .map_or(false, InputState::is_any_down)
@@ -168,7 +169,7 @@ where
 
     /// Returns `true` if a logical key has just been released.
     #[inline]
-    pub fn is_logical_key_released(&self, key: E::LogicalKey) -> bool {
+    pub fn is_logical_key_released(&self, key: K::LogicalKey) -> bool {
         self.logical_keys
             .get(&key)
             .map_or(false, InputState::is_released)
@@ -176,13 +177,13 @@ where
 
     /// All input states of mouse buttons.
     #[inline]
-    pub fn mouse_buttons(&self) -> &FxHashMap<E::MouseButton, InputState> {
+    pub fn mouse_buttons(&self) -> &FxHashMap<K::MouseButton, InputState> {
         &self.mouse_buttons
     }
 
     /// Returns `true` if a mouse button has just been pressed.
     #[inline]
-    pub fn is_mouse_button_pressed(&self, button: E::MouseButton) -> bool {
+    pub fn is_mouse_button_pressed(&self, button: K::MouseButton) -> bool {
         self.mouse_buttons
             .get(&button)
             .map_or(false, InputState::is_pressed)
@@ -190,7 +191,7 @@ where
 
     /// Returns `true` if a mouse button is down.
     #[inline]
-    pub fn is_mouse_button_down(&self, button: E::MouseButton) -> bool {
+    pub fn is_mouse_button_down(&self, button: K::MouseButton) -> bool {
         self.mouse_buttons
             .get(&button)
             .map_or(false, InputState::is_any_down)
@@ -198,14 +199,14 @@ where
 
     /// Returns `true` if a mouse button has just been released.
     #[inline]
-    pub fn is_mouse_button_released(&self, button: E::MouseButton) -> bool {
+    pub fn is_mouse_button_released(&self, button: K::MouseButton) -> bool {
         self.mouse_buttons
             .get(&button)
             .map_or(false, InputState::is_released)
     }
 
     pub fn update_keys(&mut self) {
-        self.physical_keys.retain(|_, state| match state {
+        self.keys.retain(|_, state| match state {
             InputState::Pressed => {
                 *state = InputState::Down;
                 true
@@ -233,63 +234,107 @@ where
         });
     }
 
-    pub fn process_event(&mut self, event: &E) {
-        if let Some(event) = event.convert() {
-            match event {
-                InputEvent::Modifiers(mods) => {
-                    self.mods = mods.into();
-                }
-                InputEvent::Key {
-                    physical_key,
-                    logical_key,
-                    repeat,
-                    state,
-                } => {
-                    if !repeat {
-                        self.physical_keys.insert(physical_key, state);
+    pub fn process_event(&mut self, event: InputEvent<K>) {
+        match event {
+            InputEvent::Modifiers(mods) => {
+                self.mods = mods.into();
+            }
+            InputEvent::Key {
+                key,
+                logical_key,
+                repeat,
+                state,
+            } => {
+                if !repeat {
+                    self.keys.insert(key, state);
 
-                        if let Some(logical_key) = logical_key {
-                            self.logical_keys.insert(logical_key, state);
-                        }
+                    if let Some(logical_key) = logical_key {
+                        self.logical_keys.insert(logical_key, state);
                     }
                 }
-                InputEvent::MouseButton { button, state } => {
-                    self.mouse_buttons.insert(button, state);
-                }
-                InputEvent::MouseMoved(mouse_x, mouse_y) => {
-                    self.mouse_pos = (mouse_x, mouse_y);
-                }
-                InputEvent::MouseScroll(scroll_x, scroll_y) => {
-                    self.mouse_scroll = (scroll_x, scroll_y);
-                }
+            }
+            InputEvent::MouseButton { button, state } => {
+                self.mouse_buttons.insert(button, state);
+            }
+            InputEvent::MouseMoved(mouse_x, mouse_y) => {
+                self.mouse_pos = (mouse_x, mouse_y);
+            }
+            InputEvent::MouseScroll(scroll_x, scroll_y) => {
+                self.mouse_scroll = (scroll_x, scroll_y);
             }
         }
     }
 }
 
-pub trait EventTrait: Sized {
-    type PhysicalKey: Copy + Debug + Eq + Hash;
+pub trait KeyTypes: Sized {
+    type KeyCode: Copy + Debug + Eq + Hash;
     type LogicalKey: Copy + Debug + Eq + Hash;
     type MouseButton: Copy + Debug + Eq + Hash;
-
-    fn convert(&self) -> Option<InputEvent<Self>>;
 }
 
 #[derive(Clone, Debug)]
-pub enum InputEvent<E: EventTrait> {
+pub enum InputEvent<K: KeyTypes> {
     Key {
-        physical_key: E::PhysicalKey,
-        logical_key: Option<E::LogicalKey>,
+        key: K::KeyCode,
+        logical_key: Option<K::LogicalKey>,
         repeat: bool,
         state: InputState, // Down shouldn't be used here
     },
     Modifiers(KeyMods),
     MouseMoved(f32, f32),
     MouseButton {
-        button: E::MouseButton,
+        button: K::MouseButton,
         state: InputState,
     },
     MouseScroll(f32, f32),
+}
+
+#[cfg(feature = "winit")]
+impl InputEvent<WindowEvent> {
+    pub fn from_winit_window_event(event: &WindowEvent) -> Option<Self> {
+        match event {
+            WindowEvent::KeyboardInput {
+                device_id: _,
+                event,
+                is_synthetic: false,
+            } => {
+                if let PhysicalKey::Code(key_code) = event.physical_key {
+                    Some(InputEvent::Key {
+                        key: key_code,
+                        logical_key: match event.logical_key {
+                            Key::Named(key) => Some(key),
+                            _ => None,
+                        },
+                        repeat: event.repeat,
+                        state: event.state.into(),
+                    })
+                } else {
+                    None
+                }
+            }
+            WindowEvent::ModifiersChanged(mods) => Some(InputEvent::Modifiers((*mods).into())),
+            WindowEvent::CursorMoved {
+                device_id: _,
+                position,
+            } => Some(InputEvent::MouseMoved(position.x as _, position.y as _)),
+            WindowEvent::MouseInput {
+                device_id: _,
+                state,
+                button,
+            } => Some(InputEvent::MouseButton {
+                button: *button,
+                state: (*state).into(),
+            }),
+            WindowEvent::MouseWheel {
+                device_id: _,
+                delta,
+                phase: _,
+            } => {
+                todo!()
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(feature = "winit")]
@@ -320,45 +365,8 @@ impl From<Modifiers> for KeyMods {
 }
 
 #[cfg(feature = "winit")]
-impl EventTrait for WindowEvent {
-    type PhysicalKey = KeyCode;
+impl KeyTypes for WindowEvent {
+    type KeyCode = KeyCode;
     type LogicalKey = NamedKey;
     type MouseButton = MouseButton;
-
-    fn convert(&self) -> Option<InputEvent<Self>> {
-        match self {
-            WindowEvent::KeyboardInput {
-                device_id: _,
-                event,
-                is_synthetic: false,
-            } => {
-                if let PhysicalKey::Code(key_code) = event.physical_key {
-                    Some(InputEvent::Key {
-                        physical_key: key_code,
-                        logical_key: match event.logical_key {
-                            Key::Named(key) => Some(key),
-                            _ => None,
-                        },
-                        repeat: event.repeat,
-                        state: event.state.into(),
-                    })
-                } else {
-                    None
-                }
-            },
-            WindowEvent::ModifiersChanged(mods) => {
-                Some(InputEvent::Modifiers((*mods).into()))
-            }
-            WindowEvent::CursorMoved { device_id: _, position } => {
-                Some(InputEvent::MouseMoved(position.x as _, position.y as _))
-            }
-            WindowEvent::MouseInput { device_id: _, state, button } => {
-                Some(InputEvent::MouseButton { button: *button, state: (*state).into() })
-            }
-            WindowEvent::MouseWheel { device_id: _, delta, phase: _ } => {
-                todo!()
-            }
-            _ => None,
-        }
-    }
 }
