@@ -43,14 +43,21 @@ impl GameLoop {
     }
 
     /// Perform all calculations for an update.
-    ///
-    /// Simple usage:
+    /// 
+    /// You can do something like:
+    /// 
     /// ```
-    /// let elapsed = instance.elapsed(); // using `std::time::Instance` to measure time between updates
-    /// instance = Instance::now();
-    /// game_loop.update(elapsed).run(|update_result| {
-    ///     // your actual update logic
-    /// });
+    /// loop {
+    ///     // handling events, input or whatever
+    ///     let elapsed = instance.elapsed(); // using `std::time::Instance` to measure time between updates
+    ///     instance = Instance::now();
+    /// 
+    ///     let update_result = game_loop.update(elapsed).run(|update_result| {
+    ///         // your actual update logic
+    ///     });
+    /// 
+    ///     // rendering logic
+    /// }
     /// ```
     pub fn update(&mut self, elapsed: Duration) -> UpdateResult {
         self.total_time_passed += elapsed;
@@ -90,14 +97,14 @@ impl GameLoop {
 /// The result of calling [`GameLoop::update`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UpdateResult {
-    /// The number of updates that need to happen.
+    /// The number of updates.
     pub num_updates: u64,
     /// Total number of updates since [`GameLoop`]'s creation.
     pub total_num_updates: u64,
 
     /// Time between previous and current update.
     pub frame_time: Duration,
-    /// Blending between current and next frames.
+    /// Blending between current and next frames. Primarily useful for rendering.
     pub blending_factor: f64,
 
     /// Total time passed since [`GameLoop`]'s creation.
@@ -112,35 +119,41 @@ pub struct UpdateResult {
 impl UpdateResult {
     /// Run the provided function [`UpdateResult::num_updates`] times.
     /// Aborts early if [`UpdateResult::exit`] is true.
+    /// 
+    /// Returns `self` for convenience.
     #[inline]
-    pub fn run<F>(self, mut func: F)
+    pub fn run<F>(mut self, mut func: F) -> Self
     where
-        F: FnMut(Self),
+        F: FnMut(&mut Self),
     {
         for _i in 0..self.num_updates {
-            (func)(self);
+            (func)(&mut self);
 
             if self.exit {
                 break;
             }
         }
+
+        self
     }
 
     /// Run the provided function [`UpdateResult::num_updates`] times.
     /// Aborts early if `func` returns `Err` or [`UpdateResult::exit`] is true.
+    /// 
+    /// Returns `self` for convenience.
     #[inline]
-    pub fn run_result<F, E>(self, mut func: F) -> Result<(), E>
+    pub fn run_result<F, E>(mut self, mut func: F) -> Result<Self, E>
     where
-        F: FnMut(Self) -> Result<(), E>,
+        F: FnMut(&mut Self) -> Result<(), E>,
     {
         for _i in 0..self.num_updates {
-            (func)(self)?;
+            (func)(&mut self)?;
 
             if self.exit {
                 break;
             }
         }
 
-        Ok(())
+        Ok(self)
     }
 }
