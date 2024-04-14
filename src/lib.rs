@@ -96,7 +96,7 @@ impl GameLoop {
 }
 
 /// The result of calling [`GameLoop::update`].
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct UpdateResult {
     /// The number of updates.
     pub num_updates: u64,
