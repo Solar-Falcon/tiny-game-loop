@@ -1,14 +1,12 @@
+#![no_std]
 #![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
 #![warn(missing_docs)]
 
 use core::time::Duration;
 
-mod input;
-pub use input::{Input, InputState};
-
 /// Implemented based on <https://gafferongames.com/post/fix_your_timestep>.
 #[derive(Clone, Debug)]
-pub struct WinLoop {
+pub struct GameLoop {
     target_frame_time: Duration,
     max_frame_time: Duration,
     accumulated_time: Duration,
@@ -17,7 +15,8 @@ pub struct WinLoop {
     total_time_passed: Duration,
 }
 
-impl WinLoop {
+impl GameLoop {
+    /// Create a new `GameLoop` instance.
     #[inline]
     pub fn new(target_frame_time: Duration, max_frame_time: Duration) -> Self {
         Self {
@@ -37,12 +36,22 @@ impl WinLoop {
     }
 
     /// Set the maximum time between application updates.
-    /// The real frame time can be longer, but `frame_time` will not exceed this value.
+    /// The real time can still be longer.
     #[inline]
     pub fn set_max_frame_time(&mut self, time: Duration) {
         self.max_frame_time = time;
     }
 
+    /// Perform all calculations for an update.
+    ///
+    /// Simple usage:
+    /// ```
+    /// let elapsed = instance.elapsed(); // using `std::time::Instance` to measure time between updates
+    /// instance = Instance::now();
+    /// game_loop.update(elapsed).run(|update_result| {
+    ///     // your actual update logic
+    /// });
+    /// ```
     pub fn update(&mut self, elapsed: Duration) -> UpdateResult {
         self.total_time_passed += elapsed;
 
@@ -72,44 +81,64 @@ impl WinLoop {
             blending_factor,
 
             total_time_passed: self.total_time_passed,
+
+            exit: false,
         }
     }
 }
 
+/// The result of calling [`GameLoop::update`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UpdateResult {
+    /// The number of updates that need to happen.
     pub num_updates: u64,
+    /// Total number of updates since [`GameLoop`]'s creation.
     pub total_num_updates: u64,
 
     /// Time between previous and current update.
     pub frame_time: Duration,
+    /// Blending between current and next frames.
     pub blending_factor: f64,
 
+    /// Total time passed since [`GameLoop`]'s creation.
+    /// This is a sum of the provided `elapsed` arguments.
     pub total_time_passed: Duration,
+
+    /// Whether to exit next iteration.
+    /// This is only useful in [`UpdateResult::run()`] or [`UpdateResult::run_result()`].
+    pub exit: bool,
 }
 
 impl UpdateResult {
+    /// Run the provided function [`UpdateResult::num_updates`] times.
+    /// Aborts early if [`UpdateResult::exit`] is true.
     #[inline]
     pub fn run<F>(self, mut func: F)
     where
-        F: FnMut(Self, f64),
+        F: FnMut(Self),
     {
-        let dt = self.frame_time.as_secs_f64();
-
         for _i in 0..self.num_updates {
-            (func)(self, dt);
+            (func)(self);
+
+            if self.exit {
+                break;
+            }
         }
     }
 
+    /// Run the provided function [`UpdateResult::num_updates`] times.
+    /// Aborts early if `func` returns `Err` or [`UpdateResult::exit`] is true.
     #[inline]
     pub fn run_result<F, E>(self, mut func: F) -> Result<(), E>
     where
-        F: FnMut(Self, f64) -> Result<(), E>,
+        F: FnMut(Self) -> Result<(), E>,
     {
-        let dt = self.frame_time.as_secs_f64();
-
         for _i in 0..self.num_updates {
-            (func)(self, dt)?;
+            (func)(self)?;
+
+            if self.exit {
+                break;
+            }
         }
 
         Ok(())

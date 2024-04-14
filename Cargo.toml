@@ -1,22 +1,14 @@
 [package]
-name = "win-loop-core"
+name = "tiny-game-loop"
 version = "0.1.0"
-description = "Nice input handling and a basis for frame-rate-independent game loop. "
+description = ""
 authors = ["Solar-Falcon"]
 edition = "2021"
-repository = "https://github.com/Solar-Falcon/win-loop-core"
+repository = "https://github.com/Solar-Falcon/tiny-game-loop"
+license = "Zlib"
 readme = "README.md"
+categories = ["no-std", "no-std::no-alloc"]
+keywords = ["game", "loop"]
 
 [dependencies]
 rustc-hash = "1"
-
-[dependencies.winit]
-version = "0.29"
-default-features = false
-optional = true
-
-[features]
-default = ["winit"]
-
-[package.metadata.docs.rs]
-features = ["winit/default"]
