@@ -49,6 +49,7 @@ impl GameLoop {
     /// ```
     /// loop {
     ///     // handling events, input or whatever
+    /// 
     ///     let elapsed = instance.elapsed(); // using `std::time::Instance` to measure time between updates
     ///     instance = Instance::now();
     /// 
