@@ -71,7 +71,7 @@ impl GameLoop {
 
         let mut num_updates = 0;
 
-        while self.accumulated_time > self.target_frame_time {
+        while self.accumulated_time >= self.target_frame_time {
             self.accumulated_time -= self.target_frame_time;
             num_updates += 1;
         }
