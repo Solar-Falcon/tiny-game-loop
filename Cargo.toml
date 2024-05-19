@@ -1,6 +1,6 @@
 [package]
 name = "tiny-game-loop"
-version = "0.1.0"
+version = "0.2.0"
 description = "Basis for a framerate-independent game loop. Only contains the calculations, so you could arrange the loop itself however you want."
 authors = ["Solar-Falcon"]
 edition = "2021"

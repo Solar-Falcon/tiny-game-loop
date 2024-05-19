@@ -29,10 +29,22 @@ impl GameLoop {
         }
     }
 
+    /// Create a new `GameLoop` instance specifying FPS instead of frame time for convenience.
+    #[inline]
+    pub fn new_with_fps(fps: u32, max_frame_time: Duration) -> Self {
+        Self::new(Duration::from_secs_f64(1. / fps as f64), max_frame_time)
+    }
+
     /// Set the desired (minimum) time between application updates.
     #[inline]
     pub fn set_target_frame_time(&mut self, time: Duration) {
         self.target_frame_time = time;
+    }
+
+    /// Set the desired (maximum) FPS. Overrides `target_frame_time` since they are inversions of each other.
+    #[inline]
+    pub fn set_fps(&mut self, fps: u32) {
+        self.target_frame_time = Duration::from_secs_f64(1. / fps as f64);
     }
 
     /// Set the maximum time between application updates.
